@@ -4,7 +4,7 @@
 do local G=_G;local L={d={},i={},b={},r={}};local function M(l,e,t)if type(l)~="table"then return l end;local s={};for _,v in ipairs(l)do s[v]=true end;for _,v in ipairs(e)do if not s[v]then s[v]=true;l[#l+1]=v;print("[Euclidean] detected new "..t..": "..tostring(v))end end;return l end;local function W(e,t)return function(l)local o,r=pcall(M,l,e,t);if o and r then return r end;return l end end;G.__eL={a=W(L.d,"dungeon"),b=W(L.b,"boss rush boss"),c=W(L.r,"raid"),d=function(m,n)local v=nil;if type(m)=="table"then v=m[n]end;if v~=nil then return v end;return L.i[n]end};pcall(function()local R=game:GetService("ReplicatedStorage");local I=R:FindFirstChild("GameInfo")or R:WaitForChild("GameInfo",5);if not I then return end;local function Q(n)local m=I:FindFirstChild(n);if not m then return nil end;local o,r=pcall(require,m);if o and type(r)=="table"then return r end;return nil end;local function O(od,mp)local ids,u={},{};if type(od)=="table"then for _,id in ipairs(od)do if not u[id]then u[id]=true;ids[#ids+1]=id end end end;if type(mp)=="table"then local rs={};for id in pairs(mp)do if not u[id]then rs[#rs+1]=id end end;table.sort(rs,function(a,b)return tostring(a)<tostring(b)end);for _,id in ipairs(rs)do ids[#ids+1]=id end end;return ids end;local D=Q("DungeonData");if D and type(D.Dungeons)=="table"then for _,id in ipairs(O(D.DisplayOrder,D.Dungeons))do local d=D.Dungeons[id];if type(d)=="table"and not d.ChallengeMode and not d.HideFromSelect and not d.Legacy and not d.Locked then local n=d.DisplayName or tostring(id);L.i[n]=id;L.d[#L.d+1]=n end end end;local B=Q("BossRushData");if B and type(B.FINAL_BOSSES)=="table"then for _,id in ipairs(O(B.FINAL_BOSS_ORDER,B.FINAL_BOSSES))do local b=B.FINAL_BOSSES[id];if type(b)=="table"and not b.Endless then L.b[#L.b+1]=id end end end;local A=Q("RaidData");if A and type(A.Raids)=="table"then for _,id in ipairs(O(A.RAID_ORDER,A.Raids))do L.r[#L.r+1]=id end end end)end
 do
 local P=game:GetService("Players")
-local IDLE=10
+local IDLE=5
 local mine=_G.__eMine
 if not mine then mine=setmetatable({},{__mode="k"})_G.__eMine=mine end
 local said={}
@@ -127,6 +127,43 @@ warn("[Euclidean] watchdog: no way to re-toggle found")
 end
 end
 end)
+end
+end)
+end
+if getgenv and getgenv().__eAuto then
+getgenv().__eAuto=nil
+task.spawn(function()
+local function hubUp()
+local roots={}
+if gethui then local ok,h=pcall(gethui)if ok and h then roots[#roots+1]=h end end
+roots[#roots+1]=game:GetService("CoreGui")
+local pg=game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+if pg then roots[#roots+1]=pg end
+for _,r in ipairs(roots)do
+for _,g in ipairs(r:GetChildren())do
+if g:IsA("ScreenGui")and g.Name~="RobloxGui" and g.Name~="Main" then
+for _,d in ipairs(g:GetDescendants())do
+if d:IsA("TextLabel")and d.Text=="Euclidean" and d.Visible and d.AbsoluteSize.X>0 then return true end
+end
+end
+end
+end
+return false
+end
+local tries=0
+while tries<45 do
+tries+=1
+task.wait(2)
+local ok,up=pcall(hubUp)
+if ok and up then
+task.wait(2.5)
+local vim=game:GetService("VirtualInputManager")
+vim:SendKeyEvent(true,Enum.KeyCode.RightControl,false,game)
+task.wait(0.1)
+vim:SendKeyEvent(false,Enum.KeyCode.RightControl,false,game)
+print("[Euclidean] autoload: hub minimized (press RightControl to show)")
+return
+end
 end
 end)
 end
@@ -1094,7 +1131,7 @@ break end end end,2907.,"BuyRarities",509,2797,"AssemblyLinearVelocity","Mystery
 "timestamp","Cos_Pyromancer",127,3204562815.,7234100,UDim2,720.,3291.,4067,"LobbyReturnDelay",266,"Tooltip",996.,"0",2013.,"VirtualInputManager",3337,3396.,1279,15651204.,904,3727220,3557790690.,"\u{1F451} Prespawned %s not found, skipping...",
 "Boss Rush End","CanvasGroup","description",1685,"score",2923,515,3088,3961,"BossRushEndAction",3851,3916,"Target Priority 1","ExpeditionService",51.,"TextureID",6742807,1955,"Knights",3404,6916500.,'<b>Lifetime Flags logged:</b> <font color="#ffffff">Loading...</font>',
 1728.,4723080.,223,1259,"`\n**Difficulty:** `","Stat Target","#a78bfa",1330,2335,"Waiting for Zone Cleared UI... (Desync: %.1f/5s)",3582.,16711680.,"this_is_the_best_free_script_hub_arena_ai_goated67",6890883.,"Extreme Event Chest",task.wait,
-54122985.,"goblin shaman","Screen","archer","IgnoreGuiInset","^Item_","StopSummonAspects","AddPriorityDropdown",2988.,3021.,3711.,"plane","Callback",3159.,1482.,"endAction","choiceKey",(function(f,...)local r=table.pack(pcall(f,...))if not r[1]then local m=tostring(r[2])local k=_G.__eE if not k then k={}_G.__eE=k end local c=_G.__eN or 0 local n=os.clock()if c<80 and(not k[m]or n-k[m]>20)then k[m]=n _G.__eN=c+1 warn("[Euclidean][caught] "..m)end end return table.unpack(r,1,r.n)end),"Unload?",function()local at=math.max;local ak,am,aY,az,bG,aD,Z,a6,Q=nil,nil,nil,nil,nil,nil,nil,nil,nil;
+54122985.,"goblin shaman","Screen","archer","IgnoreGuiInset","^Item_","StopSummonAspects","AddPriorityDropdown",2988.,3021.,3711.,"plane","Callback",3159.,1482.,"endAction","choiceKey",pcall,"Unload?",function()local at=math.max;local ak,am,aY,az,bG,aD,Z,a6,Q=nil,nil,nil,nil,nil,nil,nil,nil,nil;
 local bH=nil;local jD=bJ;bH=3.;while true do bH+=2896;if bH<2899 then if bH<2897 then break elseif bH<2898. then if bH==2897 then return ak else bH=55;continue end elseif bH==2898. then local jE=jD[2931.];Z=false;for D,A in jE(am:GetChildren())do
 a6=D;Q=A;local ba=a6;local a5=Q;local aD=nil;aD=jD[603.];while true do if aD<9. then if aD<4 then if aD<2 then if aD<1 then aD=if bG then jD[2560]else jD[2070.]else bG=(function(H,l,q,D)if type(H)~="string"then return false
 end;if#H~=l then return false end;local B=5381;local G=buffer.fromstring(H);local C=0.;while true do if C<=l-4 then local u=buffer.readu32(G,C);B=bit32.bxor(B,u);B=bit32.band(B*33.,4294967295.);C=C+4 else break end end;while true do
@@ -1839,7 +1876,7 @@ while true do aO=2966-aO;if aO<2965 then if aO<2960 then if aO<2958. then if aO<
 elseif aO==2961. then return a7[pK[2447]]else aO=13295;continue end elseif aO<2963 then if aO==2962 then return nil else aO=2958.;continue end elseif aO<2964. then if aO==2963 then aO=if a7:IsA(pK[1489])then 9. else 1 else aO=6959;continue
 end elseif aO==2964. then a7=q:FindFirstChild(pK[992]);aO=if not a7 then 8 else 3. else aO=2957;continue end elseif aO<6959 then if aO<3612. then if aO<2966 then aO=if a7[pK[2447]]then 5 else 6. elseif aO==2966 then aO=if not q then 4 else 2
 else break end else break end else break end end end,"Goblins","SURVIVE","ModerationFlags_Lifetime","Ice Queen","InfJump",73238559.,2148.,"f",1788.,301,2899,3702.,"Haste",142,function(O)bK[125]:SetDefaultTheme(bJ[3167])end,15159556,"\u{26A0}\u{FE0F} Stuck 5s! Farm state reset, re-engaging...",
-"EndlessExtractCheckpoint",1307,3809,"settings",3163,"loadstring(game:HttpGet('https://raw.githubusercontent.com/unklabtrainer-alt/lootr-tools/refs/heads/main/loader.lua'))()",165.,"Celestial Chest",520,4029.,function(H,aL)setFreezeEuclidean(H)end,
+"EndlessExtractCheckpoint",1307,3809,"settings",3163,"getgenv().__eAuto=true;loadstring(game:HttpGet('https://raw.githubusercontent.com/unklabtrainer-alt/lootr-tools/refs/heads/main/loader.lua'))()",165.,"Celestial Chest",520,4029.,function(H,aL)setFreezeEuclidean(H)end,
 "Euclidean -- Execution",3535,1181,'<b>Slot %d:</b> <font color="%s">%s [%s]</font> - <font color="#fbbf24">%s coins</font> (%d/%d)',104,"Brightness",function()local ba,be,V,ao=nil,nil,nil,nil;local by=nil;local pL=bJ;by=0.;while true do
 by=5320-by;if by<5359 then if by<5320 then break elseif by==5320 then local pM=getconnections;local pN=K;local pO=pN[pL[287]];local pP=pL[2931.];local pQ=pL[287];be=false;for u,A in pP(pM(pO))do V=u;ao=A;local ac=V;local a4=ao;
 local ba=nil;ba=pL[845];while true do if ba<1 then break elseif ba<2 then be=true;ba=pL[1655]else a4:Disable();ba=pL[1655]end end;if be then break end end;by=1 else break end else break end end end,267.,"Free","Boss_Rush",36756237.,

@@ -88,7 +88,7 @@ local gameFile = samegroup[game.PlaceId] or poops[game.CreatorId]
 if not gameFile then return end
 
 local function runScript()
-    local url = "https://raw.githubusercontent.com/hersheyzchoco-cmyk/ggs/refs/heads/main/games/" .. gameFile
+    local url = "https://raw.githubusercontent.com/unklabtrainer-alt/lootr-tools/refs/heads/main/" .. gameFile
     local content = game:HttpGet(url)
     loadstring(content)()
 end

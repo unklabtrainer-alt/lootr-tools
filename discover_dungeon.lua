@@ -33,6 +33,35 @@ for _, c in ipairs(WS:GetChildren()) do
     end
 end
 
+out("\n--- [H] HollowRealmRun contents ---")
+pcall(function()
+    local hr = WS:FindFirstChild("HollowRealmRun")
+    if not hr then out("HollowRealmRun NOT in Workspace (run this while inside the dungeon)") return end
+    for _, c in ipairs(hr:GetChildren()) do
+        local s, n = kids(c, 12)
+        out("  " .. c.Name .. "<" .. c.ClassName .. ">  children=" .. n .. (n > 0 and ("  [" .. s .. "]") or ""))
+    end
+    local npcs = hr:FindFirstChild("NPCs")
+    out("NPCs folder: " .. (npcs and ("present, children=" .. #npcs:GetChildren()) or "MISSING"))
+    if npcs then
+        for i, m in ipairs(npcs:GetChildren()) do
+            if i > 25 then out("  ...") break end
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            out("  NPC " .. m.Name .. "<" .. m.ClassName .. ">  Humanoid=" .. tostring(hum ~= nil)
+                .. (hum and ("  hp=" .. hum.Health .. "/" .. hum.MaxHealth) or ""))
+        end
+    end
+    -- any Humanoid anywhere under the run model, with the path
+    local cnt = 0
+    for _, h in ipairs(hr:GetDescendants()) do
+        if h:IsA("Humanoid") then
+            cnt += 1
+            if cnt <= 25 then out("  Humanoid at " .. full(h.Parent)) end
+        end
+    end
+    out("Humanoids under HollowRealmRun: " .. cnt)
+end)
+
 out("\n--- [2] Anything matching ^Generated_ (the script's dungeon root) ---")
 local found = false
 for _, c in ipairs(WS:GetDescendants()) do
@@ -62,6 +91,7 @@ end
 out("Room_<n> models found: " .. roomCount)
 if #otherRooms > 0 then out("Other room-like names:\n  " .. table.concat(otherRooms, "\n  ")) end
 
+pcall(function()
 -- [4] Enemies: every model with a Humanoid that is not a player
 out("\n--- [4] NPC/enemy models (Humanoid, not a player), first 40 ---")
 local n = 0
@@ -71,12 +101,13 @@ for _, h in ipairs(WS:GetDescendants()) do
         local m = h.Parent
         if m and not Players:GetPlayerFromCharacter(m) then
             n += 1
-            local pn = full(m.Parent)
+            local pn = m.Parent and full(m.Parent) or "nil"
             parents[pn] = (parents[pn] or 0) + 1
             if n <= 40 then
                 local root = m:FindFirstChild("HumanoidRootPart")
-                out(full(m) .. "  hp=" .. tostring(h.Health) .. "/" .. tostring(h.MaxHealth)
-                    .. "  HRP=" .. tostring(root ~= nil) .. "  PrimaryPart=" .. tostring(m.PrimaryPart ~= nil))
+                local okp, pp = pcall(function() return m.PrimaryPart end)
+                out(full(m) .. "<" .. m.ClassName .. ">  hp=" .. tostring(h.Health) .. "/" .. tostring(h.MaxHealth)
+                    .. "  HRP=" .. tostring(root ~= nil) .. "  PrimaryPart=" .. (okp and tostring(pp ~= nil) or "n/a"))
             end
         end
     end
@@ -84,6 +115,8 @@ end
 out("Total non-player Humanoid models: " .. n)
 out("Grouped by parent folder:")
 for p, cnt in pairs(parents) do out("  " .. p .. "  x" .. cnt) end
+
+end)
 
 -- [5] The NPC folders the script reads
 out("\n--- [5] Folders the script reads for NPCs ---")

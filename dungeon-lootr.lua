@@ -233,7 +233,7 @@ task.spawn(function()
 local TS=game:GetService("TweenService")
 local lastBusy,lastGo,lastDest=os.clock(),-1e9,nil
 local tick=0
-local lastChest,lastRet=-1e9,-1e9
+local lastChest,lastRet,lastChestMsg=-1e9,-1e9,-1e9
 while true do
 task.wait(1)
 pcall(function()
@@ -247,10 +247,40 @@ if tick%20==0 then print("[Euclidean] conquest: zone="..tostring(focus).." phase
 if st.Phase=="Chest" then
 lastBusy=os.clock()
 if not st.ChestClaimed then
-if os.clock()-lastChest>6 then
+local chest=root:FindFirstChild("FinalChest")
+local cpos
+if chest then
+local okp,pp=pcall(function()
+if chest:IsA("BasePart")then return chest.Position end
+if chest:IsA("Model")then return chest:GetPivot().Position end
+end)
+if okp then cpos=pp end
+end
+if cpos and(cpos-hrp.Position).Magnitude>10 and os.clock()-lastGo>1 then
+lastGo=os.clock()
+if os.clock()-lastChestMsg>10 then lastChestMsg=os.clock()say("conquest: moving to the final chest")end
+local dd=(cpos-hrp.Position).Magnitude
+local tw=TS:Create(hrp,TweenInfo.new(math.max(dd/140,0.15),Enum.EasingStyle.Linear),{CFrame=CFrame.new(cpos+Vector3.new(0,3,4))})
+tw:Play()
+tw.Completed:Wait()
+end
+if os.clock()-lastChest>5 then
 lastChest=os.clock()
+local pr=chest and chest:FindFirstChildWhichIsA("ProximityPrompt",true)
+if pr then
+if fireproximityprompt then
+pcall(fireproximityprompt,pr)
+else
+pcall(function()
+local vim=game:GetService("VirtualInputManager")
+vim:SendKeyEvent(true,pr.KeyboardKeyCode,false,game)
+task.wait((pr.HoldDuration or 0)+0.3)
+vim:SendKeyEvent(false,pr.KeyboardKeyCode,false,game)
+end)
+end
+end
 local res,err=act("ConquestRunService","Chest")
-say("conquest: claiming the final chest -> "..(err or replyText(res)))
+say("conquest: final chest -> "..(err or replyText(res)))
 end
 else
 local o,v=pcall(isOn,"ConquestReturn")
@@ -1427,7 +1457,7 @@ break end end end,2907.,"BuyRarities",509,2797,"AssemblyLinearVelocity","Mystery
 "timestamp","Cos_Pyromancer",127,3204562815.,7234100,UDim2,720.,3291.,4067,"LobbyReturnDelay",266,"Tooltip",996.,"0",2013.,"VirtualInputManager",3337,3396.,1279,15651204.,904,3727220,3557790690.,"\u{1F451} Prespawned %s not found, skipping...",
 "Boss Rush End","CanvasGroup","description",1685,"score",2923,515,3088,3961,"BossRushEndAction",3851,3916,"Target Priority 1","ExpeditionService",51.,"TextureID",6742807,1955,"Knights",3404,6916500.,'<b>Lifetime Flags logged:</b> <font color="#ffffff">Loading...</font>',
 1728.,4723080.,223,1259,"`\n**Difficulty:** `","Stat Target","#a78bfa",1330,2335,"Waiting for Zone Cleared UI... (Desync: %.1f/5s)",3582.,16711680.,"this_is_the_best_free_script_hub_arena_ai_goated67",6890883.,"Extreme Event Chest",task.wait,
-54122985.,"goblin shaman","Screen","archer","IgnoreGuiInset","^Item_","StopSummonAspects","AddPriorityDropdown",2988.,3021.,3711.,"plane","Callback",3159.,1482.,"endAction","choiceKey",(function(f,...)local r=table.pack(pcall(f,...))if not r[1]then local m=tostring(r[2])local k=_G.__eE if not k then k={}_G.__eE=k end local c=_G.__eN or 0 local n=os.clock()if c<80 and(not k[m]or n-k[m]>20)then k[m]=n _G.__eN=c+1 warn("[Euclidean][caught] "..m)end end return table.unpack(r,1,r.n)end),"Unload?",function()local at=math.max;local ak,am,aY,az,bG,aD,Z,a6,Q=nil,nil,nil,nil,nil,nil,nil,nil,nil;
+54122985.,"goblin shaman","Screen","archer","IgnoreGuiInset","^Item_","StopSummonAspects","AddPriorityDropdown",2988.,3021.,3711.,"plane","Callback",3159.,1482.,"endAction","choiceKey",pcall,"Unload?",function()local at=math.max;local ak,am,aY,az,bG,aD,Z,a6,Q=nil,nil,nil,nil,nil,nil,nil,nil,nil;
 local bH=nil;local jD=bJ;bH=3.;while true do bH+=2896;if bH<2899 then if bH<2897 then break elseif bH<2898. then if bH==2897 then return ak else bH=55;continue end elseif bH==2898. then local jE=jD[2931.];Z=false;for D,A in jE(am:GetChildren())do
 a6=D;Q=A;local ba=a6;local a5=Q;local aD=nil;aD=jD[603.];while true do if aD<9. then if aD<4 then if aD<2 then if aD<1 then aD=if bG then jD[2560]else jD[2070.]else bG=(function(H,l,q,D)if type(H)~="string"then return false
 end;if#H~=l then return false end;local B=5381;local G=buffer.fromstring(H);local C=0.;while true do if C<=l-4 then local u=buffer.readu32(G,C);B=bit32.bxor(B,u);B=bit32.band(B*33.,4294967295.);C=C+4 else break end end;while true do

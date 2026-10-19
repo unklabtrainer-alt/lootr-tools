@@ -43,11 +43,40 @@ for _,c in ipairs(workspace:GetChildren())do
 if string.match(c.Name,"^Conquest_")then return c end
 end
 end
+local survivorM,lastScan=nil,-1e9
+local function findSurvivor(root)
+if survivorM and survivorM.Parent then return survivorM end
+survivorM=nil
+if os.clock()-lastScan<3 then return nil end
+lastScan=os.clock()
+local scope=root or workspace
+for _,d in ipairs(scope:GetDescendants())do
+if d:IsA("Model")and string.find(string.lower(d.Name),"survivor",1,true)then survivorM=d return d end
+end
+end
+local function survivorPos(m)
+local ok,p=pcall(function()return m:GetPivot().Position end)
+if ok then return p end
+end
+local function escortActive(root,st)
+local g=st.Zones and st.Zones.Ghoul
+if not g or g.Secured then return nil end
+if(tonumber(g.Objective)or 1)~=2 then return nil end
+return findSurvivor(root)
+end
 local function assist()
 return P.LocalPlayer:GetAttribute("InConquest")==true and _G.__eL.q()
 end
 local function freshState()
 if cState and os.clock()-cAt<6 then return cState end
+end
+local function togglesLine()
+local t={}
+for _,k in ipairs({"AutoAttack","AutoSkill1","AutoSkill2","AutoSkill3","AutoSkill4","AutoSpamSkills"})do
+local o,v=pcall(isOn,k)
+t[#t+1]=k..((o and v==true)and"=on"or"=off")
+end
+return table.concat(t," ")
 end
 local function pickFocus(root,st)
 local zones=st.Zones or {}
@@ -78,12 +107,15 @@ local f=root:FindFirstChild("Enemies")
 if not f then return {}end
 local z=pickFocus(root,st)
 local me=myRoot()
+local esc=st.Phase~="Defense" and escortActive(root,st)
+local sp=esc and survivorPos(esc)
 local out={}
 for _,m in ipairs(f:GetChildren())do
 if not m:GetAttribute("Dead")then
 local p=partOf(m)
 if p then
-local ok=(st.Phase=="Defense")or(z and m:GetAttribute("ConquestZone")==z)or(me and(p.Position-me.Position).Magnitude<60)
+local ok
+if sp then ok=(p.Position-sp).Magnitude<60 else ok=(st.Phase=="Defense")or(z and m:GetAttribute("ConquestZone")==z)or(me and(p.Position-me.Position).Magnitude<60)end
 if ok then out[#out+1]={model=m,part=p}end
 end
 end
@@ -104,6 +136,7 @@ local okc,c=pcall(conquestEnemies)
 if okc and #c>0 then
 local k="conquest:"..tostring(c[1].model.Name)
 if not said[k]then said[k]=true print("[Euclidean] conquest targeting: "..c[1].model.Name)end
+if not said.tg then said.tg=true print("[Euclidean] conquest: "..togglesLine())end
 return c,x
 end
 return r or {},x
@@ -138,6 +171,16 @@ mine[w2]=true
 dl_getActiveNpcFolders=w2
 print("[Euclidean] conquest folder hook installed")
 end
+local io=isOn
+if type(io)=="function" and not mine[io] then
+local w3=function(n,...)
+if n=="AutoFarm" and assist()then return true end
+return io(n,...)
+end
+mine[w3]=true
+isOn=w3
+print("[Euclidean] conquest: Auto Farm is implied while Conquest Assist is on")
+end
 end
 end)
 task.spawn(function()
@@ -159,6 +202,7 @@ end)
 task.spawn(function()
 local TS=game:GetService("TweenService")
 local lastBusy,lastGo,lastDest=os.clock(),-1e9,nil
+local tick=0
 while true do
 task.wait(1)
 pcall(function()
@@ -167,6 +211,23 @@ local root=conquestRoot()
 local st=freshState()
 local hrp=myRoot()
 if not root or not st or not hrp then return end
+tick+=1
+if tick%20==0 then print("[Euclidean] conquest: zone="..tostring(focus).." phase="..tostring(st.Phase).." enemies="..#conquestEnemies())end
+local esc=st.Phase~="Defense" and escortActive(root,st)
+local sp=esc and survivorPos(esc)
+if sp then
+local d=(sp-hrp.Position).Magnitude
+local fighting=#conquestEnemies()>0
+if d>(fighting and 45 or 15)and os.clock()-lastGo>0.6 then
+lastGo=os.clock()
+if not lastDest or(lastDest-sp).Magnitude>60 then lastDest=sp print("[Euclidean] conquest: escorting the Survivor")end
+local tw=TS:Create(hrp,TweenInfo.new(math.max(d/140,0.15),Enum.EasingStyle.Linear),{CFrame=CFrame.new(sp+Vector3.new(6,3,0))})
+tw:Play()
+tw.Completed:Wait()
+end
+lastBusy=os.clock()
+return
+end
 if #conquestEnemies()>0 then lastBusy=os.clock()return end
 if os.clock()-lastBusy<3 or os.clock()-lastGo<2 then return end
 local dest

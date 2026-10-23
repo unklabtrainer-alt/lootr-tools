@@ -401,6 +401,8 @@ end
 task.spawn(function()
 local lastPos,lastN,lastH,lastMove=nil,0,nil,os.clock()
 local kicks=0
+local TS=game:GetService("TweenService")
+local hiSince,hpPrev,hpT,hpDrop,lastEscape=nil,0,os.clock(),0,-1e9
 while true do
 task.wait(1)
 pcall(function()
@@ -455,14 +457,29 @@ if lastH and hsum<lastH-1 then lastAct=now end
 lastH=hsum
 local reason
 if n>0 then
-local near,nname=math.huge,"?"
+local near,nname,npos=math.huge,"?",nil
 for _,m in ipairs(f:GetChildren())do
 if not m:GetAttribute("Dead")then
 local pt=partOf(m)
-if pt then local d=(pt.Position-p).Magnitude if d<near then near,nname=d,m.Name end end
+if pt then local d=(pt.Position-p).Magnitude if d<near then near,nname,npos=d,m.Name,pt.Position end end
 end
 end
 if prev and near>60 and(p-prev).Magnitude>15 then lastAct=now end
+local hi=ch and ch:GetAttribute("HitIFrame")==true
+if hi then hiSince=hiSince or now else hiSince=nil end
+if hum then
+if hpPrev==0 then hpPrev=hum.Health end
+if now-hpT>=5 then hpDrop=hpPrev-hum.Health hpPrev=hum.Health hpT=now end
+end
+if hiSince and now-hiSince>=3 and now-lastAct>=3 and hpDrop>0 and near<40 and now-lastEscape>10 then
+lastEscape=now
+local dir=npos and Vector3.new(p.X-npos.X,0,p.Z-npos.Z)or Vector3.new(1,0,0)
+if dir.Magnitude<0.1 then dir=Vector3.new(1,0,0)end
+warn("[Euclidean] watchdog: stun-locked for "..string.format("%d",now-hiSince).."s next to "..nname..", stepping away")
+local tw=TS:Create(hrp,TweenInfo.new(0.3,Enum.EasingStyle.Linear),{CFrame=CFrame.new(p+dir.Unit*45)})
+tw:Play()
+lastAct=now
+end
 if now-lastAct>IDLE then reason="no hits for "..IDLE.."s with enemies alive (nearest "..nname.." "..string.format("%d",near==math.huge and 0 or near).." studs)" end
 else
 lastAct=now
@@ -471,7 +488,7 @@ end
 if reason and now-lastKick>(n>0 and 20 or 45)then
 if now-lastKick<90 then kicks+=1 else kicks=1 end
 lastKick=now lastAct=now lastMove=now
-local info=stateInfo()
+local info=stateInfo().." hitI="..(hiSince and string.format("%d",now-hiSince).."s" or "no").." hpDrop5s="..string.format("%d",hpDrop)
 warn("[Euclidean] watchdog: "..reason..", re-toggling farm (try "..kicks..") "..info)
 pcall(function()
 local line=os.date("%H:%M:%S").."  "..reason.." try "..kicks.." "..info.."\n"

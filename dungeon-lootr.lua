@@ -28,7 +28,7 @@ local function liveList(bossOnly)
 local out={}
 local f=npcFolder()
 if f then
-local limit=(f.Parent and string.match(f.Parent.Name,"^Generated_"))and 200 or math.huge
+local limit=math.huge
 local ch=P.LocalPlayer.Character
 local me=ch and ch:FindFirstChild("HumanoidRootPart")
 for _,m in ipairs(f:GetChildren())do

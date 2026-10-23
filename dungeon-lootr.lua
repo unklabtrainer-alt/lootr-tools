@@ -383,7 +383,7 @@ local ch=P.LocalPlayer.Character
 local hr=ch and ch:FindFirstChild("HumanoidRootPart")
 local h=ch and ch:FindFirstChildOfClass("Humanoid")
 if hr then t[#t+1]="anch="..tostring(hr.Anchored)..",vel="..string.format("%d",hr.AssemblyLinearVelocity.Magnitude)end
-if h then t[#t+1]="hum="..string.format("%d",h.Health).."/"..string.format("%d",h.MaxHealth)..",ws="..string.format("%d",h.WalkSpeed)..",plat="..tostring(h.PlatformStand)..",sit="..tostring(h.Sit)..",st="..tostring(h:GetState())end
+if h then t[#t+1]="hum="..string.format("%d",h.Health).."/"..string.format("%d",h.MaxHealth)..",ws="..string.format("%d",h.WalkSpeed)..",plat="..tostring(h.PlatformStand)..",sit="..tostring(h.Sit)..",st="..tostring(h:GetState())..",floor="..tostring(h.FloorMaterial)end
 local pa={}
 for _,k in ipairs({"OpenWindow","LoadingInputLocked","Sprint_Locked","SpecialForm","InAir","InNoCombatZone","DepositingItem","SellingItem","Weapon_Equipped"})do
 local v=P.LocalPlayer:GetAttribute(k)
@@ -403,6 +403,7 @@ local lastPos,lastN,lastH,lastMove=nil,0,nil,os.clock()
 local kicks=0
 local TS=game:GetService("TweenService")
 local hiSince,hpPrev,hpT,hpDrop,lastEscape=nil,0,os.clock(),0,-1e9
+local airSince,lastNudge=nil,-1e9
 while true do
 task.wait(1)
 pcall(function()
@@ -431,6 +432,16 @@ end
 local ch=P.LocalPlayer.Character
 local hum=ch and ch:FindFirstChildOfClass("Humanoid")
 if hum and hum.Health<=0 then lastAct=now lastMove=now return end
+local inAir=P.LocalPlayer:GetAttribute("InAir")==true
+local hst=hum and hum:GetState()
+local grounded=hst==Enum.HumanoidStateType.Running or hst==Enum.HumanoidStateType.RunningNoPhysics or hst==Enum.HumanoidStateType.Landed
+if inAir and grounded then airSince=airSince or now else airSince=nil end
+if airSince and now-airSince>=3 and now-lastAct>=3 and now-lastNudge>8 then
+lastNudge=now
+warn("[Euclidean] watchdog: InAir stuck for "..string.format("%d",now-airSince).."s while grounded, nudging a jump")
+pcall(function()hum:ChangeState(Enum.HumanoidStateType.Jumping)end)
+pcall(function()P.LocalPlayer:SetAttribute("InAir",false)end)
+end
 local f=npcFolder()
 if not f then lastAct=now lastMove=now lastN=0 lastH=nil return end
 local n,hsum=0,0

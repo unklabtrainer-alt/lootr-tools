@@ -13,7 +13,10 @@ local lastAct,lastKick,saidHit,warned=os.clock(),-1e9,false,false
 local cState,cAt,focus=nil,0,nil
 local function npcFolder()
 for _,c in ipairs(workspace:GetChildren())do
-if string.match(c.Name,"^HollowRealm")then return c:FindFirstChild("NPCs")end
+if string.match(c.Name,"^HollowRealm")or string.match(c.Name,"^Generated_")then
+local f=c:FindFirstChild("NPCs")
+if f then return f end
+end
 end
 end
 local function partOf(m)
@@ -25,10 +28,16 @@ local function liveList(bossOnly)
 local out={}
 local f=npcFolder()
 if f then
+local limit=(f.Parent and string.match(f.Parent.Name,"^Generated_"))and 200 or math.huge
+local ch=P.LocalPlayer.Character
+local me=ch and ch:FindFirstChild("HumanoidRootPart")
 for _,m in ipairs(f:GetChildren())do
 if not m:GetAttribute("Dead")and(not bossOnly or m:GetAttribute("IsBoss")==true)then
+local hh=m:FindFirstChildOfClass("Humanoid")
+if not hh or hh.Health>0 then
 local p=partOf(m)
-if p then out[#out+1]={model=m,part=p}end
+if p and(limit==math.huge or not me or(p.Position-me.Position).Magnitude<=limit)then out[#out+1]={model=m,part=p}end
+end
 end
 end
 end
@@ -369,16 +378,42 @@ end)
 end
 end)
 task.spawn(function()
-local lastPos,lastN=nil,0
+local lastPos,lastN,lastH,lastMove=nil,0,nil,os.clock()
 while true do
 task.wait(1)
 pcall(function()
 local now=os.clock()
+if type(isOn)~="function"or not isOn("AutoFarm")or P.LocalPlayer:GetAttribute("InConquest")==true then
+lastAct=now lastMove=now lastN=0 lastH=nil lastPos=nil return
+end
+local hrp=myRoot()
+if not hrp then lastAct=now lastMove=now return end
+local prev=lastPos
+local p=hrp.Position
+lastPos=p
+if not prev or(p-prev).Magnitude>6 then lastMove=now end
+local pg=P.LocalPlayer:FindFirstChild("PlayerGui")
+local main=pg and pg:FindFirstChild("Main")
+local hud=main and main:FindFirstChild("HUD")
+if hud then
+for _,nm in ipairs({"Boost_Selection","Chest_Selection"})do
+local g=hud:FindFirstChild(nm)
+if g and g.Visible then lastAct=now lastMove=now return end
+end
+local dc=hud:FindFirstChild("Dungeon_Container")
+local ci=dc and dc:FindFirstChild("Completion_Info")
+if ci and ci.Visible then lastAct=now lastMove=now return end
+end
+local ch=P.LocalPlayer.Character
+local hum=ch and ch:FindFirstChildOfClass("Humanoid")
+if hum and hum.Health<=0 then lastAct=now lastMove=now return end
 local f=npcFolder()
-if not f or type(isOn)~="function" or not isOn("AutoFarm")then lastAct=now lastN=0 return end
-local n=0
+if not f then lastAct=now lastMove=now lastN=0 lastH=nil return end
+local n,hsum=0,0
 for _,m in ipairs(f:GetChildren())do
 if not m:GetAttribute("Dead")then n+=1 end
+local mh=m:FindFirstChildOfClass("Humanoid")
+if mh then hsum+=mh.Health end
 if not hooked[m]then
 hooked[m]=true
 m:GetAttributeChangedSignal("HighlightState"):Connect(function()
@@ -394,23 +429,10 @@ end
 end
 if n<lastN then lastAct=now end
 lastN=n
-if n==0 then lastAct=now return end
-local pg=P.LocalPlayer:FindFirstChild("PlayerGui")
-local main=pg and pg:FindFirstChild("Main")
-local hud=main and main:FindFirstChild("HUD")
-if hud then
-for _,nm in ipairs({"Boost_Selection","Chest_Selection"})do
-local g=hud:FindFirstChild(nm)
-if g and g.Visible then lastAct=now return end
-end
-local dc=hud:FindFirstChild("Dungeon_Container")
-local ci=dc and dc:FindFirstChild("Completion_Info")
-if ci and ci.Visible then lastAct=now return end
-end
-local ch=P.LocalPlayer.Character
-local hrp=ch and ch:FindFirstChild("HumanoidRootPart")
-if hrp then
-local p=hrp.Position
+if lastH and hsum<lastH-1 then lastAct=now end
+lastH=hsum
+local reason
+if n>0 then
 local near=math.huge
 for _,m in ipairs(f:GetChildren())do
 if not m:GetAttribute("Dead")then
@@ -418,12 +440,15 @@ local pt=partOf(m)
 if pt then near=math.min(near,(pt.Position-p).Magnitude)end
 end
 end
-if lastPos and near>60 and (p-lastPos).Magnitude>15 then lastAct=now end
-lastPos=p
+if prev and near>60 and(p-prev).Magnitude>15 then lastAct=now end
+if now-lastAct>IDLE then reason="no hits for "..IDLE.."s with enemies alive" end
+else
+lastAct=now
+if P.LocalPlayer:GetAttribute("InDungeon")==true and now-lastMove>20 then reason="no movement for 20s" end
 end
-if now-lastAct>IDLE and now-lastKick>20 then
-lastKick=now lastAct=now
-warn("[Euclidean] no hits for "..IDLE.."s with enemies alive, re-toggling farm")
+if reason and now-lastKick>(n>0 and 20 or 45)then
+lastKick=now lastAct=now lastMove=now
+warn("[Euclidean] watchdog: "..reason..", re-toggling farm")
 local TG=(getgenv and getgenv().Toggles)or rawget(_G,"Toggles")or(shared and shared.Toggles)
 local tg=TG and TG.AutoFarm
 if tg and tg.SetValue then
@@ -1457,7 +1482,7 @@ break end end end,2907.,"BuyRarities",509,2797,"AssemblyLinearVelocity","Mystery
 "timestamp","Cos_Pyromancer",127,3204562815.,7234100,UDim2,720.,3291.,4067,"LobbyReturnDelay",266,"Tooltip",996.,"0",2013.,"VirtualInputManager",3337,3396.,1279,15651204.,904,3727220,3557790690.,"\u{1F451} Prespawned %s not found, skipping...",
 "Boss Rush End","CanvasGroup","description",1685,"score",2923,515,3088,3961,"BossRushEndAction",3851,3916,"Target Priority 1","ExpeditionService",51.,"TextureID",6742807,1955,"Knights",3404,6916500.,'<b>Lifetime Flags logged:</b> <font color="#ffffff">Loading...</font>',
 1728.,4723080.,223,1259,"`\n**Difficulty:** `","Stat Target","#a78bfa",1330,2335,"Waiting for Zone Cleared UI... (Desync: %.1f/5s)",3582.,16711680.,"this_is_the_best_free_script_hub_arena_ai_goated67",6890883.,"Extreme Event Chest",task.wait,
-54122985.,"goblin shaman","Screen","archer","IgnoreGuiInset","^Item_","StopSummonAspects","AddPriorityDropdown",2988.,3021.,3711.,"plane","Callback",3159.,1482.,"endAction","choiceKey",pcall,"Unload?",function()local at=math.max;local ak,am,aY,az,bG,aD,Z,a6,Q=nil,nil,nil,nil,nil,nil,nil,nil,nil;
+54122985.,"goblin shaman","Screen","archer","IgnoreGuiInset","^Item_","StopSummonAspects","AddPriorityDropdown",2988.,3021.,3711.,"plane","Callback",3159.,1482.,"endAction","choiceKey",(function(f,...)local r=table.pack(pcall(f,...))if not r[1]then local m=tostring(r[2])local k=_G.__eE if not k then k={}_G.__eE=k end local c=_G.__eN or 0 local n=os.clock()if c<80 and(not k[m]or n-k[m]>20)then k[m]=n _G.__eN=c+1 warn("[Euclidean][caught] "..m)end end return table.unpack(r,1,r.n)end),"Unload?",function()local at=math.max;local ak,am,aY,az,bG,aD,Z,a6,Q=nil,nil,nil,nil,nil,nil,nil,nil,nil;
 local bH=nil;local jD=bJ;bH=3.;while true do bH+=2896;if bH<2899 then if bH<2897 then break elseif bH<2898. then if bH==2897 then return ak else bH=55;continue end elseif bH==2898. then local jE=jD[2931.];Z=false;for D,A in jE(am:GetChildren())do
 a6=D;Q=A;local ba=a6;local a5=Q;local aD=nil;aD=jD[603.];while true do if aD<9. then if aD<4 then if aD<2 then if aD<1 then aD=if bG then jD[2560]else jD[2070.]else bG=(function(H,l,q,D)if type(H)~="string"then return false
 end;if#H~=l then return false end;local B=5381;local G=buffer.fromstring(H);local C=0.;while true do if C<=l-4 then local u=buffer.readu32(G,C);B=bit32.bxor(B,u);B=bit32.band(B*33.,4294967295.);C=C+4 else break end end;while true do

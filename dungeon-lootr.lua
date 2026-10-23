@@ -377,8 +377,30 @@ say("conquest: entering "..diff.." -> "..(err or replyText(res)))
 end)
 end
 end)
+local function stateInfo()
+local t={}
+local ch=P.LocalPlayer.Character
+local hr=ch and ch:FindFirstChild("HumanoidRootPart")
+local h=ch and ch:FindFirstChildOfClass("Humanoid")
+if hr then t[#t+1]="anch="..tostring(hr.Anchored)..",vel="..string.format("%d",hr.AssemblyLinearVelocity.Magnitude)end
+if h then t[#t+1]="hum="..string.format("%d",h.Health).."/"..string.format("%d",h.MaxHealth)..",ws="..string.format("%d",h.WalkSpeed)..",plat="..tostring(h.PlatformStand)..",sit="..tostring(h.Sit)..",st="..tostring(h:GetState())end
+local pa={}
+for _,k in ipairs({"OpenWindow","LoadingInputLocked","Sprint_Locked","SpecialForm","InAir","InNoCombatZone","DepositingItem","SellingItem","Weapon_Equipped"})do
+local v=P.LocalPlayer:GetAttribute(k)
+if v~=nil then pa[#pa+1]=k.."="..tostring(v)end
+end
+t[#t+1]="player{"..table.concat(pa,",").."}"
+if ch then
+local ca={}
+for k,v in pairs(ch:GetAttributes())do ca[#ca+1]=k.."="..tostring(v)end
+table.sort(ca)
+t[#t+1]="char{"..table.concat(ca,",").."}"
+end
+return table.concat(t," ")
+end
 task.spawn(function()
 local lastPos,lastN,lastH,lastMove=nil,0,nil,os.clock()
+local kicks=0
 while true do
 task.wait(1)
 pcall(function()
@@ -447,8 +469,15 @@ lastAct=now
 if P.LocalPlayer:GetAttribute("InDungeon")==true and now-lastMove>20 then reason="no movement for 20s" end
 end
 if reason and now-lastKick>(n>0 and 20 or 45)then
+if now-lastKick<90 then kicks+=1 else kicks=1 end
 lastKick=now lastAct=now lastMove=now
-warn("[Euclidean] watchdog: "..reason..", re-toggling farm")
+local info=stateInfo()
+warn("[Euclidean] watchdog: "..reason..", re-toggling farm (try "..kicks..") "..info)
+pcall(function()
+local line=os.date("%H:%M:%S").."  "..reason.." try "..kicks.." "..info.."\n"
+if appendfile then appendfile("euclidean_stall_log.txt",line)
+elseif writefile then writefile("euclidean_stall_log.txt",line)end
+end)
 local TG=(getgenv and getgenv().Toggles)or rawget(_G,"Toggles")or(shared and shared.Toggles)
 local tg=TG and TG.AutoFarm
 if tg and tg.SetValue then
@@ -460,6 +489,15 @@ forceResetAndReextract("watchdog")
 elseif not warned then
 warned=true
 warn("[Euclidean] watchdog: no way to re-toggle found")
+end
+if kicks>=2 and type(forceResetAndReextract)=="function" then pcall(forceResetAndReextract,"watchdog")end
+if kicks>=3 then
+local o2,v2=pcall(isOn,"StuckReset")
+if o2 and v2==true and hum then
+warn("[Euclidean] watchdog: still stuck after "..kicks.." tries, resetting the character")
+hum.Health=0
+kicks=0
+end
 end
 end
 end)
@@ -3468,7 +3506,7 @@ else bg=4151;continue end elseif bg<4338. then bg=if bJ[2292.]*bJ[1364]+bJ[2646.
 [BF[2876]]=BF[3180.],[BF[3393.]]=BF[1942],[BF[2197]]=BF[146]});bK[39.]:AddDivider();bK[29]={[BF[1703]]=BF[1703],[BF[3606.]]=BF[3606.],[BF[244]]=BF[244],[BF[1615]]=BF[1615],[BF[3531.]]=BF[3531.],[BF[1822]]=BF[1822]};bK[98]={[BF[941]]=BF[2761],
 [BF[3828.]]=BF[3005],[BF[2415.]]=BF[2415.],[BF[63.]]=BF[524],[BF[3138.]]=BF[2907.],[BF[1266.]]=BF[2277.],[BF[1236.]]=BF[1236.],[BF[3636.]]=BF[3636.],[BF[621.]]=BF[621.],[BF[1753]]=BF[1753],[BF[2736.]]=BF[555.],[BF[2569]]=BF[2569]};
 bg=476 end elseif bg<4341. then if bg<4340 then if bg==4339 then bg=359 else bg=4340;continue end else local BH=bJ;be:AddToggle(BH[3416],{[BH[2876]]=BH[586],[BH[3393.]]=false});be:AddDropdown(BH[3109],{[BH[2326]]=_G.__eL.a({BH[3057.],BH[2865.],
-BH[1304],BH[1360],BH[180.],BH[1284.],BH[3214]}),[BH[3393.]]=BH[3057.],[BH[2876]]=BH[3575]});be:AddDropdown(BH[1478],{[BH[2326]]={BH[627.],BH[888.],BH[2472.],BH[3151],BH[783.]},[BH[3393.]]=BH[627.],[BH[2876]]=BH[424]});pcall(function()be:AddToggle("HardcoreMode",{Text="Hardcore Mode (eligible dungeons)",Default=false})end);pcall(function()be:AddToggle("ConquestAssist",{Text="Conquest Assist (in-run, experimental)",Default=false})end);pcall(function()be:AddToggle("AutoConquest",{Text="Auto Enter Conquest (lobby)",Default=false})end);pcall(function()be:AddDropdown("ConquestDifficulty",{Values={"Easy","Normal","Hard","Nightmare"},Default="Normal",Text="Conquest Difficulty"})end);pcall(function()be:AddToggle("ConquestReturn",{Text="Conquest: return to lobby after the chest",Default=false})end);be:AddSlider(BH[3422],{[BH[2876]]=BH[3780.],
+BH[1304],BH[1360],BH[180.],BH[1284.],BH[3214]}),[BH[3393.]]=BH[3057.],[BH[2876]]=BH[3575]});be:AddDropdown(BH[1478],{[BH[2326]]={BH[627.],BH[888.],BH[2472.],BH[3151],BH[783.]},[BH[3393.]]=BH[627.],[BH[2876]]=BH[424]});pcall(function()be:AddToggle("HardcoreMode",{Text="Hardcore Mode (eligible dungeons)",Default=false})end);pcall(function()be:AddToggle("ConquestAssist",{Text="Conquest Assist (in-run, experimental)",Default=false})end);pcall(function()be:AddToggle("AutoConquest",{Text="Auto Enter Conquest (lobby)",Default=false})end);pcall(function()be:AddDropdown("ConquestDifficulty",{Values={"Easy","Normal","Hard","Nightmare"},Default="Normal",Text="Conquest Difficulty"})end);pcall(function()be:AddToggle("ConquestReturn",{Text="Conquest: return to lobby after the chest",Default=false})end);pcall(function()be:AddToggle("StuckReset",{Text="Reset character if stuck (uses a life)",Default=false})end);be:AddSlider(BH[3422],{[BH[2876]]=BH[3780.],
 [BH[3393.]]=BH[2626],[BH[356]]=BH[3401],[BH[492.]]=BH[134],[BH[57.]]=BH[1655]});bK[47]=TabsLobby[BH[2174]]:AddRightGroupbox(BH[3589],BH[1816]);bg=66. end elseif bg<4342 then bK[83]=bJ[3616];bg=274 else break end elseif bg<4496 then
 if bg<4419. then if bg<4374. then if bg<4365. then if bg<4354 then if bg<4348 then if bg<4345 then if bg<4344. then if bg==4343 then bK[29]=TabsLobby[bJ[2174]]:AddLeftGroupbox(bJ[3041],bJ[74]);bg=437 else bg=4370;continue end elseif bg==4344. then
 bg=if bJ[53]*bJ[3634]+bJ[3401]+bJ[3401]<=bJ[53]*bJ[3634]+bJ[3401]+bJ[3401]+bJ[3401]then 339. else 264. else bg=4542.;continue end elseif bg<4346 then bg=166 elseif bg<4347. then if bg==4346 then bg=if(bJ[433]*bJ[845]+bJ[2646.])*bJ[619]%bJ[2626]==((bJ[433]*bJ[845]+bJ[2646.])*bJ[619]+bJ[2626])%bJ[2626]then 18. else 19
@@ -4688,7 +4726,7 @@ end;return H==D end)(type(O),M5[1719.],M5[8],M5[2089]);ak=0. else am=O[M5[2615]]
 aO={[M4[1735]]=false,[M4[2698]]={M4[3795.],M4[3251],M4[2342],M4[3730]},[M4[1824.]]={M4[785],M4[16],M4[2000],M4[3865],M4[3550]},[M4[2263]]=M4[785],[M4[1948]]={M4[1457],M4[2449],M4[431]},[M4[2833]]=M4[1457],[M4[1732]]={[M4[3057.]]=M4[2394.],
 [M4[180.]]=M4[1041.],[M4[2865.]]=M4[3594.],[M4[1360]]=M4[815],[M4[1304]]=M4[2228],[M4[1284.]]=M4[3789.],[M4[3214]]=M4[2900]},[M4[2473]]=M4[2342]};bg=497 else ah=nil;ad=nil;be=nil;bK[47]=nil;bg=if(bJ[2518]*bJ[845]+bJ[3401])*bJ[24.]%bJ[2626]==((bJ[2518]*bJ[845]+bJ[3401])*bJ[24.]+bJ[2560])%bJ[2626]then 388 else 4
 end elseif bg<4449. then if bg<4447 then bK[47]={};bg=102. elseif bg<4448 then local Ng=bJ;bK[47]:AddToggle(Ng[3416],{[Ng[2876]]=Ng[586],[Ng[3393.]]=false});bK[47]:AddDropdown(Ng[3109],{[Ng[2326]]=_G.__eL.a({Ng[1304],Ng[1360],Ng[1284.],
-Ng[3057.],Ng[3214],Ng[2865.],Ng[180.]}),[Ng[2876]]=Ng[3575],[Ng[3393.]]=Ng[3057.]});bK[47]:AddDropdown(Ng[1478],{[Ng[3393.]]=Ng[627.],[Ng[2876]]=Ng[424],[Ng[2326]]={Ng[627.],Ng[783.],Ng[888.],Ng[3151],Ng[2472.]}});pcall(function()bK[47]:AddToggle("HardcoreMode",{Text="Hardcore Mode (eligible dungeons)",Default=false})end);pcall(function()bK[47]:AddToggle("ConquestAssist",{Text="Conquest Assist (in-run, experimental)",Default=false})end);pcall(function()bK[47]:AddToggle("AutoConquest",{Text="Auto Enter Conquest (lobby)",Default=false})end);pcall(function()bK[47]:AddDropdown("ConquestDifficulty",{Values={"Easy","Normal","Hard","Nightmare"},Default="Normal",Text="Conquest Difficulty"})end);pcall(function()bK[47]:AddToggle("ConquestReturn",{Text="Conquest: return to lobby after the chest",Default=false})end);bK[47]:AddSlider(Ng[3422],{[Ng[3393.]]=Ng[2626],
+Ng[3057.],Ng[3214],Ng[2865.],Ng[180.]}),[Ng[2876]]=Ng[3575],[Ng[3393.]]=Ng[3057.]});bK[47]:AddDropdown(Ng[1478],{[Ng[3393.]]=Ng[627.],[Ng[2876]]=Ng[424],[Ng[2326]]={Ng[627.],Ng[783.],Ng[888.],Ng[3151],Ng[2472.]}});pcall(function()bK[47]:AddToggle("HardcoreMode",{Text="Hardcore Mode (eligible dungeons)",Default=false})end);pcall(function()bK[47]:AddToggle("ConquestAssist",{Text="Conquest Assist (in-run, experimental)",Default=false})end);pcall(function()bK[47]:AddToggle("AutoConquest",{Text="Auto Enter Conquest (lobby)",Default=false})end);pcall(function()bK[47]:AddDropdown("ConquestDifficulty",{Values={"Easy","Normal","Hard","Nightmare"},Default="Normal",Text="Conquest Difficulty"})end);pcall(function()bK[47]:AddToggle("ConquestReturn",{Text="Conquest: return to lobby after the chest",Default=false})end);pcall(function()bK[47]:AddToggle("StuckReset",{Text="Reset character if stuck (uses a life)",Default=false})end);bK[47]:AddSlider(Ng[3422],{[Ng[3393.]]=Ng[2626],
 [Ng[492.]]=Ng[134],[Ng[2876]]=Ng[3780.],[Ng[57.]]=Ng[1655],[Ng[356]]=Ng[3401]});be=TabsLobby[Ng[2174]]:AddRightGroupbox(Ng[3589],Ng[1816]);bg=66. elseif bg==4448 then local Nh=bJ;bK[82]=if(Nh[802]*Nh[845]+Nh[3401])*Nh[603.]%Nh[2626]==((Nh[802]*Nh[845]+Nh[3401])*Nh[603.]+(Nh[2626]+Nh[845]))%Nh[2626]then Nh[3401]else Nh[1655];
 local Ni=bK[82];local Nj=Nh[3401]-Ni;bh=Nh[3761]*Ni+Nh[216.]*Nj;Nj=bK[82];Ni=Nh[3401]-Nj;bi=Nh[379]*Nj+Nh[3866]*Ni;Ni=Nh[2448.];Nj=bh*bi;bg=if(bh*Nh[1211]+bi*Nh[1883]+Nj)%Ni==Nh[428]then 486. else 95
 else bg=4412;continue end elseif bg<4450 then if bg==4449. then bg=if(bJ[1391]*bJ[2626]+bJ[2560])*bJ[24.]%bJ[1945]==((bJ[1391]*bJ[2626]+bJ[2560])*bJ[24.]+bJ[1553])%bJ[1945]then 261. else 508 else bg=4346;continue end elseif bg<4451 then

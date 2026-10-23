@@ -433,15 +433,15 @@ if lastH and hsum<lastH-1 then lastAct=now end
 lastH=hsum
 local reason
 if n>0 then
-local near=math.huge
+local near,nname=math.huge,"?"
 for _,m in ipairs(f:GetChildren())do
 if not m:GetAttribute("Dead")then
 local pt=partOf(m)
-if pt then near=math.min(near,(pt.Position-p).Magnitude)end
+if pt then local d=(pt.Position-p).Magnitude if d<near then near,nname=d,m.Name end end
 end
 end
 if prev and near>60 and(p-prev).Magnitude>15 then lastAct=now end
-if now-lastAct>IDLE then reason="no hits for "..IDLE.."s with enemies alive" end
+if now-lastAct>IDLE then reason="no hits for "..IDLE.."s with enemies alive (nearest "..nname.." "..string.format("%d",near==math.huge and 0 or near).." studs)" end
 else
 lastAct=now
 if P.LocalPlayer:GetAttribute("InDungeon")==true and now-lastMove>20 then reason="no movement for 20s" end
